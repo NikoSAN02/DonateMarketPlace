@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from "react";
 import Web3nModal from "web3modal";
 import { ethers } from "ethers";
+const { getAddress } = ethers.utils;
+
 
 //internal import
 import { CrowdFundingABI, CrowdFundingAddress } from "./constants";
 
 //smart contract interaction
 
-const fetchContract = (signOrProvider) => new ethers.Contract(CrowdFundingAddress,CrowdFundingABI, signOrProvider);
+const fetchContract = (provider) => {
+  const contract = new ethers.Contract(CrowdFundingAddress, CrowdFundingABI, provider)
+  return contract;
+};
+
 export const CrowdFundingContext = React.createContext();
 
 export const CrowdFundingProvider = ({ children }) => {
@@ -38,10 +44,11 @@ export const CrowdFundingProvider = ({ children }) => {
     }
   };
   const getCampaigns = async () => {
-    const provider = new ethers.providers.JsonRpcProvider();
+    const provider = new ethers.providers.JsonRpcProvider("https://rpc.testnet.fantom.network");
     const contract = fetchContract(provider);
+    console.log(contract);
     const campaigns = await contract.getCampaigns();
-    //console.log(campaigns);
+    console.log(campaigns);
     const parsedCampaigns = campaigns.map((campaign, i) => ({
       owner: campaign.owner,
       title: campaign.title,
@@ -57,15 +64,16 @@ export const CrowdFundingProvider = ({ children }) => {
     return parsedCampaigns;
   };
   const getUserCampaigns = async () => {
-    const provider = new ethers.providers.JsonRpcProvider();
+    const provider = new ethers.providers.JsonRpcProvider("https://rpc.testnet.fantom.network");
     const contract = fetchContract(provider);
     const allCampaigns = await contract.getCampaigns();
     const accounts = await window.ethereum.request({
       method: "eth_accounts",
     });
     const currentUser = accounts[0];
+    console.log(currentUser);
     const filteredCampaigns = allCampaigns.filter(
-      (campaign) => campaign.owner === "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720"
+      (campaign) => getAddress(campaign.owner) === getAddress(accounts[0])
       
     );
 
@@ -104,7 +112,7 @@ export const CrowdFundingProvider = ({ children }) => {
   };
 
   const getDonations = async (pId) => {
-    const provider = new ethers.providers.JsonRpcProvider();
+    const provider = new ethers.providers.JsonRpcProvider("https://rpc.testnet.fantom.network");
     const contract = fetchContract(provider);
     const donations = await contract.getDonators(pId);
     const numberOfDonations = donations[0].length;
